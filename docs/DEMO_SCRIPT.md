@@ -1,65 +1,36 @@
 # MINERIS Demo Script
 
-## 1. Login
+## 1. Sign in
 
-Show role-based authentication.
+Register an account through `POST /api/v1/auth/register`, then sign in through
+the dashboard. Public registration creates a viewer account. No default admin
+credentials are shipped.
 
-Say:
+## 2. Select a mining zone
 
-> "MINERIS provides role-based access for geologists, mine planners, operations managers and administrators."
+Use the selector or click a mine on the map. Confirm that the selected boundary
+is highlighted and that the prospectivity, production, and decision panels
+update for the same mine.
 
-## 2. Dashboard
+## 3. Review prospectivity
 
-Show:
-- active mine
-- production status
-- shortfall risk
-- prospectivity summary
-- equipment risk
+Show how each mine's map color reflects its own LOW, MEDIUM, or HIGH
+classification. Open a popup to view its score and confidence; use the panel to
+review class probabilities, feature importance, and the explanation.
 
-## 3. Geospatial Map
+The current model was trained on synthetic generated data, and current mine
+feature inputs are demonstration values. Do not describe its output as
+real-world accuracy or a certified reserve estimate.
 
-Show:
-- mine boundary
-- geological layer
-- drill holes
-- prospectivity layer
+## 4. Review production and recommendations
 
-Say:
+Show the available annual production history, trend forecast, demand gap, risk
+classification, and decision-support recommendations. The forecast is a
+simple linear trend; the current demo does not model equipment downtime,
+rainfall, or blasting delays.
 
-> "The platform combines spatial and geological evidence to identify prospective zones. These outputs are decision-support indicators and require geological validation."
+## 5. Close
 
-## 4. Production
-
-Show:
-- historical production
-- target
-- forecast
-- predicted deviation
-
-## 5. Shortfall Explanation
-
-Show:
-
-```text
-Shortfall Risk: HIGH
-
-Major factors:
-Equipment downtime
-Rainfall
-Blasting delay
-```
-
-## 6. Recommendations
-
-Show candidate actions.
-
-Say:
-
-> "The system does not autonomously control mining operations. It presents explainable candidate actions for human review."
-
-## 7. Close
-
-End with:
-
-> "MINERIS connects space-based observations, geological evidence and mine operations into one decision-support platform — enabling the transition from reactive planning to predictive mine intelligence."
+Explain that MINERIS is a decision-support prototype. Real operational use
+requires verified geological, satellite, drilling, assay, and production data
+plus domain validation.

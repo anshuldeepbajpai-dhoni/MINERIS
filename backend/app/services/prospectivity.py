@@ -1,4 +1,6 @@
-from sqlalchemy import select
+from threading import RLock
+
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.models.mine import Mine
@@ -8,6 +10,7 @@ from ml.prospectivity.predictor import predict_prospectivity
 
 
 MODEL_VERSION = "random-forest-v1"
+_prediction_lock = RLock()
 
 
 def calculate_prospectivity(mine: Mine) -> dict:
@@ -60,28 +63,31 @@ def get_or_create_prospectivity(
     db: Session,
     mine: Mine,
 ) -> ProspectivityResult:
+    # FastAPI runs sync handlers in a thread pool. Serialize the read/create
+    # sequence locally, and across workers with a PostgreSQL transaction lock.
+    with _prediction_lock:
+        if db.bind is not None and db.bind.dialect.name == "postgresql":
+            lock_key = (mine.id * 1_000_003 + sum(MODEL_VERSION.encode()))
+            db.execute(
+                text("SELECT pg_advisory_xact_lock(:lock_key)"),
+                {"lock_key": lock_key},
+            )
 
-    existing = db.scalar(
-        select(ProspectivityResult)
-        .where(
-            ProspectivityResult.mine_id == mine.id,
-            ProspectivityResult.model_version == MODEL_VERSION,
+        existing = db.scalar(
+            select(ProspectivityResult)
+            .where(
+                ProspectivityResult.mine_id == mine.id,
+                ProspectivityResult.model_version == MODEL_VERSION,
+            )
+            .order_by(ProspectivityResult.id.desc())
         )
-        .order_by(ProspectivityResult.id.desc())
-    )
 
-    if existing:
-        return existing
+        if existing:
+            return existing
 
-    result_data = calculate_prospectivity(mine)
-
-    result = ProspectivityResult(
-        mine_id=mine.id,
-        **result_data,
-    )
-
-    db.add(result)
-    db.commit()
-    db.refresh(result)
-
-    return result
+        result_data = calculate_prospectivity(mine)
+        result = ProspectivityResult(mine_id=mine.id, **result_data)
+        db.add(result)
+        db.commit()
+        db.refresh(result)
+        return result

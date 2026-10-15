@@ -1,5 +1,9 @@
 # Project Scope
 
+This document describes the intended domain and separates it from the current
+prototype. The current implementation uses demo inputs; future capabilities
+below should not be presented as already integrated.
+
 ## 1. Problem
 
 Manganese reserve identification and production planning can depend on fragmented geological, operational and environmental information. The proposed system provides a unified AI/geospatial decision-support layer.
@@ -17,24 +21,22 @@ Manganese reserve identification and production planning can depend on fragmente
 
 ### A. Authentication
 - Login
-- JWT access/refresh tokens
+- JWT access tokens (no refresh-token endpoint)
 - Password hashing
-- RBAC
+- Role checks; public registration creates viewer accounts
 
 ### B. Mine Intelligence
 - Mine list
 - Mine details
 - Mine boundary
-- Geological layers
-- Drill-hole locations
-- Assay/sample information
+- Mine GeoJSON boundaries
+- Drill-hole model exists; no dashboard API is currently exposed
 
 ### C. Geospatial Intelligence
 - Map visualization
-- Satellite-derived indicators
-- Prospectivity probability layer
-- Confidence layer
-- Spatial filtering
+- All-mine prospectivity classifications on the map
+- Per-mine score, confidence, class probabilities, and feature importance
+- Current inputs are synthetic/demo values, not live satellite data
 
 ### D. Production Intelligence
 - Historical production
@@ -43,10 +45,7 @@ Manganese reserve identification and production planning can depend on fragmente
 - Shortfall risk
 
 ### E. Operational Risk
-- Equipment status
-- Downtime indicators
-- Weather impact
-- Blasting/maintenance delay indicators
+- Equipment model exists; no current equipment-risk API integration
 
 ### F. Recommendation Engine
 - Identify major risk drivers
@@ -57,13 +56,11 @@ Manganese reserve identification and production planning can depend on fragmente
 
 - Secure authentication
 - API validation
-- Rate limiting
-- Caching
-- Structured logging
-- Automated tests
-- CI pipeline
-- Containerized development
-- Monitoring-ready architecture
+- Focused backend unit tests
+- Local development configuration
+
+Rate limiting, caching, CI, containerized deployment, and monitoring are not
+currently implemented.
 
 ## 5. Explicit Non-Goals for the 2-Day Prototype
 

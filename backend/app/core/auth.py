@@ -27,22 +27,17 @@ def get_current_user(
     try:
         payload = decode_access_token(token)
 
-        print("JWT PAYLOAD:", payload)
-
         user_id = payload.get("sub")
 
         if user_id is None:
-            print("JWT ERROR: sub missing")
             raise credentials_exception
 
         user_id = int(user_id)
 
     except JWTError as exc:
-        print("JWT ERROR:", repr(exc))
         raise credentials_exception
 
     except ValueError as exc:
-        print("JWT VALUE ERROR:", repr(exc))
         raise credentials_exception
 
     user = db.get(User, user_id)

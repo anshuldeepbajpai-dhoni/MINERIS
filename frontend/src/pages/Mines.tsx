@@ -10,14 +10,22 @@ import { apiRequest } from "../lib/api";
 import type {
   MineGeoJSON,
 } from "../types/mine";
-import type { ProspectivityResult } from "../types/prospectivity";
+import type {
+  ProspectivityOverviewItem,
+  ProspectivityResult,
+} from "../types/prospectivity";
+
 
 import type { ProductionAnalysis } from "../types/production";
 import type { DecisionSupport } from "../types/decisionSupport";
 
 import "../styles/mines.css";
 
-export default function Mines() {
+interface MinesProps {
+  onLogout: () => void;
+}
+
+export default function Mines({ onLogout }: MinesProps) {
   const [data, setData] = useState<MineGeoJSON | null>(null);
 
   const [selectedMineId, setSelectedMineId] =
@@ -25,6 +33,10 @@ export default function Mines() {
 
   const [prospectivity, setProspectivity] =
     useState<ProspectivityResult | null>(null);
+
+  const [prospectivityOverview, setProspectivityOverview] =
+    useState<ProspectivityOverviewItem[]>([]);
+  const [overviewError, setOverviewError] = useState("");
 
   const [production, setProduction] =
     useState<ProductionAnalysis | null>(null);
@@ -188,6 +200,42 @@ export default function Mines() {
   }, [selectedMineId]);
 
   // --------------------------------------------------
+  // LOAD ALL-MINE PROSPECTIVITY OVERVIEW
+  // --------------------------------------------------
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProspectivityOverview() {
+      try {
+        setOverviewError("");
+        const result =
+          await apiRequest<ProspectivityOverviewItem[]>(
+            "/mines/prospectivity-overview"
+          );
+
+        if (!cancelled) {
+          setProspectivityOverview(result);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setOverviewError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load all-mine prospectivity"
+          );
+        }
+      }
+    }
+
+    loadProspectivityOverview();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // --------------------------------------------------
   // LOADING
   // --------------------------------------------------
 
@@ -265,6 +313,10 @@ export default function Mines() {
           <span>
             SYSTEM OPERATIONAL
           </span>
+
+          <button className="logout-button" onClick={onLogout}>
+            Sign out
+          </button>
 
         </div>
 
@@ -361,8 +413,14 @@ export default function Mines() {
             data={data}
             selectedMineId={selectedMineId}
             prospectivity={prospectivity}
+            prospectivityOverview={prospectivityOverview}
             onMineSelect={(mineId) => setSelectedMineId(mineId)}
              />
+            {overviewError && (
+              <p role="status" className="map-data-message">
+                All-mine classifications are unavailable. {overviewError}
+              </p>
+            )}
           </div>
 
         </section>

@@ -48,26 +48,11 @@ def register(
             detail="Email already registered",
         )
 
-    allowed_roles = {
-        "admin",
-        "geologist",
-        "mine_planner",
-        "operations_manager",
-        "analyst",
-        "viewer",
-    }
-
-    if data.role not in allowed_roles:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid role",
-        )
-
     user = User(
         email=data.email,
         full_name=data.full_name,
         password_hash=hash_password(data.password),
-        role=data.role,
+        role="viewer",
     )
 
     db.add(user)

@@ -21,3 +21,12 @@ export interface ProspectivityResult {
   model_version: string;
   created_at: string;
 }
+
+export interface ProspectivityOverviewItem {
+  mine_id: number;
+  mine_name: string;
+  score: number;
+  classification: "LOW" | "MEDIUM" | "HIGH";
+  confidence: number | null;
+  model_version: string;
+}

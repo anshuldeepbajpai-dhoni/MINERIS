@@ -1,6 +1,7 @@
-from sqlalchemy import text
+from sqlalchemy import select, text
 
 from app.db.session import SessionLocal
+from app.models.mine import Mine
 
 
 MINES = [
@@ -59,7 +60,16 @@ def seed_mines():
     db = SessionLocal()
 
     try:
+        inserted = 0
+        skipped = 0
         for mine in MINES:
+            existing = db.scalar(
+                select(Mine.id).where(Mine.name == mine["name"])
+            )
+            if existing is not None:
+                skipped += 1
+                continue
+
             query = text(
                 """
                 INSERT INTO mines
@@ -87,10 +97,11 @@ def seed_mines():
             )
 
             db.execute(query, mine)
+            inserted += 1
 
         db.commit()
 
-        print("Successfully seeded MINERIS demo mines.")
+        print(f"Demo mine seeding completed. Inserted: {inserted}; skipped: {skipped}.")
 
     except Exception:
         db.rollback()

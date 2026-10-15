@@ -1,108 +1,53 @@
 # API Specification
 
-Base path:
+Base path: `/api/v1`
 
-```text
-/api/v1
-```
+Interactive OpenAPI documentation is available at `/docs` when the backend is
+running.
 
 ## Authentication
 
-```http
-POST /auth/login
-POST /auth/refresh
-POST /auth/logout
-GET  /auth/me
-```
+| Method | Path | Access | Purpose |
+| --- | --- | --- | --- |
+| POST | `/auth/register` | Public | Create an account with the `viewer` role |
+| POST | `/auth/login` | Public | Exchange form-encoded username/password for a bearer token |
+| GET | `/auth/me` | Bearer token | Return the current active user |
+| GET | `/auth/admin-test` | Admin | Verify the admin role check |
 
-## Mines
+There is no refresh-token endpoint. Access-token expiry is configured with
+`ACCESS_TOKEN_EXPIRE_MINUTES`; sign in again after expiry. Registration ignores
+caller-supplied roles and always creates a viewer account.
 
-```http
-GET    /mines
-POST   /mines
-GET    /mines/{mine_id}
-PUT    /mines/{mine_id}
-DELETE /mines/{mine_id}
-```
+## Mines and geospatial data
 
-## Geospatial
+| Method | Path | Access | Purpose |
+| --- | --- | --- | --- |
+| GET | `/mines` | Bearer token | List mines |
+| GET | `/mines/{mine_id}` | Bearer token | Retrieve one mine |
+| GET | `/mines/geojson` | Bearer token | Return all mine boundaries as a GeoJSON FeatureCollection |
+| GET | `/mines/{mine_id}/prospectivity` | Bearer token | Retrieve or create a mine prediction |
+| GET | `/mines/prospectivity-overview` | Bearer token | Return one active-model result per mine |
 
-```http
-GET /mines/{mine_id}/layers
-GET /mines/{mine_id}/boundary
-GET /mines/{mine_id}/prospectivity
-GET /mines/{mine_id}/drill-holes
-```
+The overview entries contain `mine_id`, `mine_name`, `score` (0–100),
+`classification`, `confidence`, and `model_version`. An empty mine table
+returns an empty array. A missing or unreadable model artifact returns HTTP 503.
 
-## Production
+## Production and decision support
 
-```http
-GET /mines/{mine_id}/production
-GET /mines/{mine_id}/production/forecast
-GET /mines/{mine_id}/production/shortfall
-```
+| Method | Path | Access | Purpose |
+| --- | --- | --- | --- |
+| GET | `/mines/{mine_id}/production` | Bearer token | Historical production, trend forecast, shortfall, and risk |
+| GET | `/mines/{mine_id}/decision-support` | Bearer token | Prospectivity summary and production recommendations |
 
-## Equipment
+Production returns HTTP 404 when a mine has no production records. Decision
+support returns an explicit `production_available: false` response when
+production history is missing.
 
-```http
-GET /mines/{mine_id}/equipment
-GET /equipment/{equipment_id}/risk
-```
+## Health
 
-## Risk
+`GET /health` returns the API health status. `GET /` returns basic service
+metadata. These endpoints do not check database connectivity.
 
-```http
-GET /mines/{mine_id}/risks
-GET /mines/{mine_id}/risks/summary
-```
-
-## Recommendations
-
-```http
-GET  /mines/{mine_id}/recommendations
-POST /recommendations/{recommendation_id}/acknowledge
-POST /recommendations/{recommendation_id}/resolve
-```
-
-## Predictions
-
-```http
-POST /predictions/prospectivity
-POST /predictions/production
-POST /predictions/shortfall
-GET  /predictions/{prediction_id}
-```
-
-## Standard Response
-
-```json
-{
-  "success": true,
-  "data": {},
-  "message": "Request completed",
-  "request_id": "uuid"
-}
-```
-
-## Error Response
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid input"
-  },
-  "request_id": "uuid"
-}
-```
-
-## API Rules
-
-- Version APIs from day one.
-- Validate request bodies.
-- Use authentication for protected endpoints.
-- Apply RBAC.
-- Rate-limit expensive endpoints.
-- Never expose stack traces to clients.
-- Use request IDs for tracing.
+Protected endpoints require `Authorization: Bearer <access_token>`. Errors use
+FastAPI's standard JSON error format; endpoint-specific status codes and
+schemas are visible in the generated OpenAPI document.

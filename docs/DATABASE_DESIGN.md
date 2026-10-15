@@ -1,87 +1,37 @@
 # Database Design
 
-## Primary Database
+## Database
 
-**PostgreSQL + PostGIS**
+PostgreSQL with PostGIS is required for mine geometry queries. Alembic
+migrations under `backend/app/db/migrations/versions` are authoritative.
 
-PostGIS is required for mine boundaries, drill-hole coordinates, geological polygons and spatial queries.
-
-## Core Entities
+## Current entities
 
 ```text
 users
-roles
-permissions
-user_roles
-
-mines
-mine_boundaries
-
-geological_layers
-geological_features
-
-drill_holes
-assay_results
-
-satellite_observations
-
+mines (MULTIPOLYGON, SRID 4326)
+drill_holes (POINT, SRID 4326)
 production_records
-production_targets
-
 equipment
-equipment_events
-maintenance_records
-
-weather_records
-
 predictions
-prediction_features
-model_versions
-
-risk_events
+prospectivity_results
+risks
 recommendations
-
-audit_logs
 ```
 
-## Key Relationships
+Roles are stored on `users`; separate role and permission tables do not exist.
+Geological layers, assays, satellite observations, weather records, audit logs,
+and model-version tables are not implemented. The current migrations do not
+add GiST geometry indexes.
 
-```text
-Mine
- |
- +-- Mine Boundary
- +-- Geological Layers
- +-- Drill Holes
- |     +-- Assay Results
- +-- Production Records
- +-- Equipment
- |     +-- Equipment Events
- +-- Weather Records
- +-- Predictions
- +-- Risks
- +-- Recommendations
-```
+## Relationships
 
-## Spatial Data
+Mine records are referenced by drill holes, production records, equipment,
+predictions, prospectivity results, risks, and recommendations. Mine IDs are
+database-generated and must be resolved from the database.
 
-Use PostGIS geometry types:
+## Demo data
 
-- `POINT` — drill holes, equipment locations
-- `LINESTRING` — roads/haul routes if available
-- `POLYGON/MULTIPOLYGON` — mine boundaries, geological zones, risk zones
-
-Use GiST spatial indexes for frequently queried geometry columns.
-
-## Important Indexes
-
-- `users.email`
-- `production_records.mine_id, date`
-- `equipment.mine_id`
-- `predictions.mine_id, created_at`
-- spatial GiST indexes on geometry columns
-
-## Prototype Data
-
-For the two-day build, use clearly labelled synthetic/public sample data where real operational data is unavailable.
-
-Never label synthetic data as MOIL operational data.
+The included training dataset and mine/production seeds are demonstration
+data. They are not verified MOIL or other operational observations. Seed
+scripts should only be used after checking the target database.

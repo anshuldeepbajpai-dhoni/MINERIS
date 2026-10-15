@@ -2,10 +2,10 @@
 
 ## Authentication
 
-- JWT access token
-- Refresh token
-- Password hashing using Argon2id or bcrypt
-- Short-lived access tokens
+- JWT bearer access token with a configurable expiration
+- Password hashing using bcrypt
+- Public registration always creates a `viewer` account; callers cannot
+  assign themselves an elevated role
 
 ## Authorization
 
@@ -20,7 +20,9 @@ DATA_ANALYST
 VIEWER
 ```
 
-Every protected endpoint checks permissions.
+Protected endpoints require an active authenticated user. The admin test
+endpoint additionally checks the `admin` role. Role checks should be added to
+other write or administrative routes as those routes are introduced.
 
 ## API Security
 
@@ -32,7 +34,7 @@ Every protected endpoint checks permissions.
 - Parameterized database queries/ORM
 - No secrets in source code
 - Environment variables for credentials
-- Audit logging
+- Avoid logging token contents or credentials
 
 ## Rate Limiting
 
@@ -70,7 +72,7 @@ For CSV/GeoJSON/GeoTIFF uploads:
 
 ## Audit Events
 
-Record important actions:
+Audit important actions when operational logging is added:
 
 - login
 - failed login

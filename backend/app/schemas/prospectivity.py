@@ -23,3 +23,11 @@ class ProspectivityResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class ProspectivityOverviewItem(BaseModel):
+    mine_id: int
+    mine_name: str
+    score: float
+    classification: str
+    confidence: float | None = None
+    model_version: str

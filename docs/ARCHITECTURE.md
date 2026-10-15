@@ -1,105 +1,46 @@
 # System Architecture
 
-## Architectural Style
+## Current architecture
 
-MINERIS uses a **modular monolith + asynchronous worker architecture** for the prototype.
-
-This is intentionally simpler than a microservice architecture because the initial implementation is being built by one developer in two days.
-
-```text
-Users
-  |
- HTTPS
-  v
-React + TypeScript
-  |
- REST/JSON
-  v
-FastAPI
-  |
-  +-- Auth/RBAC
-  +-- Mine Module
-  +-- Geospatial Module
-  +-- Production Module
-  +-- Prediction Module
-  +-- Risk Module
-  +-- Recommendation Module
-  |
-  +-------- PostgreSQL + PostGIS
-  |
-  +-------- Redis
-              |
-              +-- Background jobs
-              +-- Cache
-              |
-              v
-         ML/Geo Workers
-```
-
-## Layers
-
-### 1. Presentation Layer
-React, TypeScript, Tailwind CSS and map visualization.
-
-### 2. API/Application Layer
-FastAPI handles:
-- authentication
-- authorization
-- validation
-- routing
-- business logic
-- API responses
-
-### 3. Intelligence Layer
-- Prospectivity model
-- Production forecasting model
-- Shortfall-risk model
-- Equipment-risk logic
-- Explainability
-- Recommendation engine
-
-### 4. Data Layer
-- PostgreSQL
-- PostGIS
-- Redis
-- Object storage for large raster/model artifacts
-
-### 5. Platform Layer
-- Docker
-- GitHub Actions
-- Nginx
-- Prometheus/Grafana-ready monitoring
-
-## Data Flow
+MINERIS is a modular monolith. The API calculates predictions and forecasts
+synchronously. There is no worker process or required Redis service.
 
 ```text
-Satellite / GIS / Geological / Operational Data
-                     |
-                     v
-              Ingestion Layer
-                     |
-                     v
-            Feature Engineering
-                     |
-          +----------+----------+
-          |                     |
-          v                     v
-   Prospectivity Model    Production/Risk Models
-          |                     |
-          +----------+----------+
-                     v
-              Risk Fusion
-                     |
-                     v
-           Recommendation Engine
-                     |
-                     v
-                FastAPI
-                     |
-                     v
-             React Dashboard
+React + TypeScript + Leaflet
+          |
+       REST/JSON
+          |
+FastAPI modular monolith
+  |       |        |
+ Auth   Mine   Intelligence
+          |        |
+          +--- PostgreSQL + PostGIS
+                   |
+          Local joblib model artifact
 ```
 
-## Important Design Constraint
+## Application layers
 
-Satellite data should be presented as evidence for **surface/environmental indicators and prospectivity**, not as a standalone method for certifying underground reserves. Drilling, geological and assay evidence provide subsurface validation.
+- **Frontend:** React, TypeScript, Leaflet, and repository CSS.
+- **API:** FastAPI routers, Pydantic schemas, bearer-token authentication, and
+  SQLAlchemy sessions.
+- **Intelligence:** scikit-learn Random Forest inference, an annual linear-trend
+  production forecast, and rule-based risk/recommendation logic.
+- **Data:** PostgreSQL/PostGIS and persisted mine, production, user, and
+  prospectivity records.
+
+## Current data flow
+
+The frontend loads authenticated mine GeoJSON and the all-mine prospectivity
+overview. Selecting a mine requests its detailed prospectivity result,
+production analysis, and decision support. Prospectivity results are stored
+against the active model version. PostgreSQL advisory locks serialize
+prediction creation across API workers.
+
+## Limitations
+
+Training data is synthetic and current mine feature inputs are fixed
+domain-informed demo values. No live satellite, drilling, assay, or operational
+feed ingestion is implemented. Docker, CI, deployed TLS, monitoring, and
+background workers are not configured. Outputs are demonstration indicators,
+not reserve estimates.

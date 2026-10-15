@@ -8,12 +8,29 @@ import type { Layer } from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 import type { MineGeoJSON} from "../../types/mine";
-import type { ProspectivityResult } from "../../types/prospectivity";
+import type {
+  ProspectivityOverviewItem,
+  ProspectivityResult,
+} from "../../types/prospectivity";
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => {
+    const entities: Record<string, string> = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    };
+    return entities[character];
+  });
+}
 
 interface MineMapProps {
   data: MineGeoJSON;
   selectedMineId?: number | null;
   prospectivity?: ProspectivityResult | null;
+  prospectivityOverview?: ProspectivityOverviewItem[];
   onMineSelect?: (mineId: number) => void;
 }
 
@@ -21,15 +38,11 @@ export default function MineMap({
   data,
   selectedMineId,
   prospectivity,
+  prospectivityOverview = [],
   onMineSelect,
 }: MineMapProps) {
-  const getProspectivityColor = (mineId: number) => {
-    // Only color the currently analyzed mine.
-    if (mineId !== selectedMineId || !prospectivity) {
-      return "#2563eb";
-    }
-
-    switch (prospectivity.classification) {
+  const getProspectivityColor = (classification?: string) => {
+    switch (classification) {
       case "HIGH":
         return "#16a34a";
 
@@ -72,11 +85,18 @@ export default function MineMap({
         {data.features.map((feature) => {
           const mineId = feature.properties.id;
           const isSelected = mineId === selectedMineId;
-          const color = getProspectivityColor(mineId);
+          const overview = prospectivityOverview.find(
+            (item) => item.mine_id === mineId
+          );
+          const selectedResult = isSelected ? prospectivity : null;
+          const classification = selectedResult?.classification ?? overview?.classification;
+          const color = getProspectivityColor(classification);
+          const score = selectedResult?.prospectivity_score ?? overview?.score;
+          const confidence = selectedResult?.confidence ?? overview?.confidence;
 
           return (
             <GeoJSON
-              key={mineId}
+              key={`${mineId}:${isSelected}:${classification ?? "pending"}:${score ?? "pending"}:${confidence ?? "pending"}`}
               data={feature as any}
               style={{
                 color,
@@ -88,21 +108,23 @@ export default function MineMap({
                 layer.on("click", () => {
                   onMineSelect?.(mineId);
                 });
-                const isCurrentMine =
-                  mineId === selectedMineId && prospectivity;
-
-                const prospectivityInfo = isCurrentMine
+                const currentOverview = prospectivityOverview.find(
+                  (item) => item.mine_id === mineId
+                );
+                const currentResult =
+                  mineId === selectedMineId ? prospectivity : null;
+                const prospectivityInfo = currentResult || currentOverview
                   ? `
                       <hr style="margin: 8px 0; border: 0; border-top: 1px solid #ddd;" />
 
                       <strong>AI Prospectivity:</strong>
-                      ${prospectivity.classification}<br/>
+                      ${currentResult?.classification ?? currentOverview?.classification}<br/>
 
                       <strong>Score:</strong>
-                      ${prospectivity.prospectivity_score}/100<br/>
+                      ${currentResult?.prospectivity_score ?? currentOverview?.score}/100<br/>
 
                       <strong>Confidence:</strong>
-                      ${prospectivity.confidence ?? "N/A"}%
+                      ${currentResult?.confidence ?? currentOverview?.confidence ?? "N/A"}%
                     `
                   : `
                       <hr style="margin: 8px 0; border: 0; border-top: 1px solid #ddd;" />
@@ -114,13 +136,13 @@ export default function MineMap({
                 layer.bindPopup(`
                   <div style="min-width: 220px;">
                     <strong style="font-size: 16px;">
-                      ${feature.properties.name}
+                      ${escapeHtml(feature.properties.name)}
                     </strong>
 
                     <br/>
 
                     <span style="color: #64748b;">
-                      ${feature.properties.location ?? "Unknown location"}
+                      ${escapeHtml(feature.properties.location ?? "Unknown location")}
                     </span>
 
                     <br/><br/>
@@ -243,7 +265,7 @@ export default function MineMap({
             lineHeight: 1.4,
           }}
         >
-          Selected mine is highlighted with a thicker boundary.
+          Mine colors show each zone's prospectivity classification. The selected mine has a thicker boundary.
         </div>
       </div>
     </div>
